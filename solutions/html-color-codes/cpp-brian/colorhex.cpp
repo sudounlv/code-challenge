@@ -1,3 +1,6 @@
+// Solution to the UNLV Sudo HTML Color Codes problem
+// Brian Kauke <kaukeb@gmail.com>, September 2013
+
 #include <iostream>
 #include <cstdio>
 #include <cassert>
