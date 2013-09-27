@@ -114,7 +114,7 @@ void reduce_to_convex_hull(point_vector& points)
 
 int main(int argc, const char * argv[])
 {
-    int n_vertices = 0;
+    int n_vertices = 0, region_number = 0;
     std::string line;
     while(!std::cin.eof())
     {
@@ -124,6 +124,9 @@ int main(int argc, const char * argv[])
             exit(1);
         if (n_vertices == 0)
             break;
+        
+        // Increment region number (first region is 1)
+        ++region_number;
         
         // Allocate storage for points
         point_vector points(n_vertices);
@@ -149,6 +152,13 @@ int main(int argc, const char * argv[])
         }
         perimeter += distance(points.back(), points.front());
         
+        // Print separator line
+        if (region_number != 1)
+            std::cout << std::endl;
+        
+        // Print region header
+        std::cout << "Region #" << region_number << ":" << std::endl;
+        
         // Print region perimeter
         for (point_vector::iterator it = points.begin(); it < points.end(); ++it)
         {
@@ -158,8 +168,6 @@ int main(int argc, const char * argv[])
         
         // Print the perimeter length
         std::cout << std::setprecision(2) << "Perimeter length = " << perimeter << std::endl;
-        
-        std::cout << std::endl;
     }
     return 0;
 }
