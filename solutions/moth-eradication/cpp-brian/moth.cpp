@@ -46,7 +46,7 @@ struct clockwise_comparator : public std::binary_function<point, point, bool>
 {
     clockwise_comparator(point p) : a(p) { }
     
-    // Returns false if c is clockwise from b with reference to a
+    // Returns true if c is clockwise from b with reference to a
     bool operator()(const point& b, const point& c)
     {
         return clockwise_or_collinear(a, b, c);
