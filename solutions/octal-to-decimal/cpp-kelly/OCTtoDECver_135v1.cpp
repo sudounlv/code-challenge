@@ -1,16 +1,14 @@
 // Solution to UNLV Sudo Octal to Decimal Conversion Problem
 // Kelly Klare <klarek@unlv.nevada.edu>, September 2013
 
-//Note- CS 135 kids have not yet learned Linux Redirection.
-//		Thus, we will use a prompt to collect input.
-
-//no error checking
+// Does not use Linux Redirection since it may not have been taught to CS 135 yet
 
 #include <iostream>
 using namespace std;
 
 int main()
 {
+	bool inputError = false;
 	char DigitLeft, DigitRight;
 	int decimal;
 	int base = 8;
@@ -35,6 +33,8 @@ int main()
 		decimal = base * 6; 
 	else if(DigitLeft=='7')
 		decimal = base * 7; 
+	else
+		inputError = true;	
 
 	if(DigitRight=='0')
 		decimal = decimal + 0;
@@ -52,8 +52,13 @@ int main()
 		decimal = decimal + 6; 
 	else if(DigitRight=='7')
 		decimal = decimal + 7; 
+	else
+		inputError = true;
 
-	cout << "Decimal = " << decimal << endl;
+	if(!inputError)
+		cout << "Decimal = " << decimal << endl;
+	else
+		cout << "ERROR: INVALID INPUT" << endl;
 
 	return 0;
 }
