@@ -35,11 +35,18 @@ double distance(const point& p0, const point& p1)
     return std::sqrt(dx*dx + dy*dy);
 }
 
+double cross_product(const point& a, const point& b, const point& c)
+{
+//    std::cout << "Cross product of " << a << " " << b << " " << c << " is "
+//        << (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x) << std::endl;
+    return (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+}
+
 typedef std::vector<point> point_vector;
 
 bool clockwise_or_collinear(const point& a, const point& b, const point& c)
 {
-    return (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x) <= 0.0;
+    return cross_product(a, b, c) <= 0.0;
 }
 
 struct clockwise_comparator : public std::binary_function<point, point, bool>
@@ -49,7 +56,7 @@ struct clockwise_comparator : public std::binary_function<point, point, bool>
     // Returns true if c is clockwise from b with reference to a
     bool operator()(const point& b, const point& c)
     {
-        return clockwise_or_collinear(a, b, c);
+        return cross_product(a, b, c) < 0.0;
     }
     
     point a;
@@ -64,13 +71,14 @@ bool compare_y(const point& a, const point& b)
 }
 
 // Reduce vector of points to its convex hull using Graham Scan
-void reduce_to_convex_hull(point_vector& points)
+// Leave the interior points in the vector, after the hull points
+size_t find_convex_hull(point_vector& points)
 {
     size_t n = points.size();
     
     // With 3 or fewer points, all must be on the hull, so nothing to do
     if (n < 4)
-        return;
+        return n;
     
     // Swap the lowest point into the first position
     point_vector::iterator lowest_pos = std::min_element(points.begin(), points.end(), compare_y);
@@ -79,29 +87,62 @@ void reduce_to_convex_hull(point_vector& points)
     
     // Sort points (except first) by angle from lowest point
     std::sort(points.begin() + 1, points.end(), clockwise_comparator(lowest_point));
+//    std::cout  << std::endl;
+//    for (point_vector::iterator p = points.begin(); p < points.end(); ++p)
+//    {
+//        std::cout << *p << std::endl;
+//    }
+//    std::cout  << std::endl;
     
     // Initialize stack with lowest point, largest angle point
     point_vector::iterator hull_back = points.begin() + 1;
     
+//    std::cout << "STACK: ";
+//    for (point_vector::iterator it = hull_back; it >= points.begin(); --it)
+//    {
+//        std::cout << *it;
+//    }
+//    std::cout << std::endl;
+    
     // Perform scan to determine whether points are on the hull
-    for (point_vector::iterator p = points.begin() + 2; p < points.end(); ++p)
+    for (point_vector::iterator it = points.begin() + 2; it <= points.end(); ++it)
     {
+        point p;
+        
+        // In the last iteration, wrap around to the first point
+        if (it == points.end())
+            p = points.front();
+        else
+            p = *it;
+        
         // If this point would produce a concavity with the current hull points, we need to
         // backtrack by discarding hull points until that is not the case. These discarded
-        // points will be interor to the new hull with the current point.
-        while (!clockwise_or_collinear(*(hull_back - 1), *hull_back, *p))
+        // points will be interior to the new hull with the current point.
+        while (cross_product(*(hull_back - 1), *hull_back, p) >= 0)
         {
-            if (hull_back > points.begin())
-                --hull_back; // Pop stack
+            
+            --hull_back; // Pop stack
+                
+//            std::cout << "Backtracking, " << "STACK: ";
+//            for (point_vector::iterator it = hull_back; it >= points.begin(); --it)
+//            {
+//                std::cout << *it;
+//            }
+//            std::cout << std::endl;
+            
+            // Don't pop the first point
+            if (hull_back == points.begin())
+                break;
         }
         
-        // Add point to hull stack
-        std::swap(*(++hull_back), *p);
+        // Add swap point into the hull stack, unless we've wrapped around
+//        std::cout << "Adding " << p << " to the stack" << std::endl;
+        if (it != points.end())
+            std::swap(*(++hull_back), *it);
     }
     
-    // Compact the original point vector to contain only points on the hull
-    size_t n_hull = hull_back - points.begin() + 1;
-    points.resize(n_hull);
+    // Return number of points comprising the hull (now at front of vector).
+    return hull_back - points.begin() + 1;
 }
 
 int main(int argc, const char * argv[])
@@ -137,8 +178,22 @@ int main(int argc, const char * argv[])
             points[i] = p;
         }
         
-        // Run convex hull algorithm
-        reduce_to_convex_hull(points);
+        // Run Graham Scan algorithm
+        size_t n_hull = find_convex_hull(points);
+        
+        // TODO: deal with interior points which may be on the perimeter.
+        // 1. Create a point p_center the hull by taking the centroid of any three hull points
+        // 2. Sort hull points and interior points, clockwise around p_center
+        // 3. Read the first two hull points. Scan through interior points until they are outside the
+        //    triangle <p_center, h0, h1>. If any fall on the line h0h1, swap them to the front of the
+        //    interior points list. Repeat until finished.
+        // 4. Sort the subrange [0, n_hull + n_perim] clockwise around p_center.
+        // 5. Resize vector to n_hull + n_perim
+        
+        
+        
+        points.resize(n_hull);
+        
         
         // Compute perimeter
         double perimeter = 0.0;
