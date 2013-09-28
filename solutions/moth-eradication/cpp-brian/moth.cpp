@@ -63,6 +63,7 @@ bool compare_y(const point& a, const point& b)
         return a.y < b.y;
 }
 
+// Reduce vector of points to its convex hull using Graham Scan
 void reduce_to_convex_hull(point_vector& points)
 {
     size_t n = points.size();
@@ -83,16 +84,19 @@ void reduce_to_convex_hull(point_vector& points)
     point_vector::iterator hull_back = points.begin() + 1;
     
     // Perform scan to determine whether points are on the hull
-    for (point_vector::iterator it = points.begin() + 2; it < points.end(); ++it)
+    for (point_vector::iterator p = points.begin() + 2; p < points.end(); ++p)
     {
-        while (!clockwise_or_collinear(*(hull_back - 1), *hull_back, *it))
+        // If this point would produce a concavity with the current hull points, we need to
+        // backtrack by discarding hull points until that is not the case. These discarded
+        // points will be interor to the new hull with the current point.
+        while (!clockwise_or_collinear(*(hull_back - 1), *hull_back, *p))
         {
             if (hull_back > points.begin())
                 --hull_back; // Pop stack
         }
         
         // Add point to hull stack
-        std::swap(*(++hull_back), *it);
+        std::swap(*(++hull_back), *p);
     }
     
     // Compact the original point vector to contain only points on the hull
