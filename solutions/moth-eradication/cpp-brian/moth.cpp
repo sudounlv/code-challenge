@@ -57,7 +57,10 @@ struct clockwise_comparator : public std::binary_function<point, point, bool>
 
 bool compare_y(const point& a, const point& b)
 {
-    return a.y < b.y;
+    if (a.y == b.y)
+        return a.x < b.x;
+    else
+        return a.y < b.y;
 }
 
 void reduce_to_convex_hull(point_vector& points)
@@ -68,47 +71,37 @@ void reduce_to_convex_hull(point_vector& points)
     if (n < 4)
         return;
     
-    // Allocate a mask vector to identify points on hull
-    std::vector<bool> on_hull(n, false);
-    
     // Swap the lowest point into the first position
     point_vector::iterator lowest_pos = std::min_element(points.begin(), points.end(), compare_y);
     std::swap(*lowest_pos, points.front());
     point lowest_point = points.front();
     
+    //std::cout << "Lowest point is " << lowest_point << std::endl;
+    
     // Sort points (except first) by angle from lowest point (in reverse order)
     std::sort(points.begin() + 1, points.end(), clockwise_comparator(lowest_point));
     
-    // The lowest point is always on the hull
-    on_hull[0] = true;
-    
     // Perform scan to determine whether points are on the hull
-    for (point_vector::iterator it = points.begin() + 1; it < points.end() - 1; ++it)
+    point_vector::iterator hull_back = points.begin() + 1;
+    //std::cout << *hull_back << " is on the stack" << std::endl;
+    for (point_vector::iterator it = points.begin() + 2; it < points.end(); ++it)
     {
-        // Size of vector is > 3, so this is safe
-        point a = *(it - 1);
-        point b = *it;
-        point c = *(it + 1);
+        while (!clockwise_or_collinear(*(hull_back - 1), *hull_back, *it))
+        {
+            if (hull_back > points.begin())
+            {
+                //std::cout << "Backtracking" << std::endl;
+                --hull_back; // Pop stack
+            }
+        }
         
-        if (clockwise_or_collinear(a, b, c))
-            on_hull[it - points.begin()] = true;
+        // Add point to hull stack
+        //std::cout << "Adding " << *it << " to the stack" << std::endl;
+        std::swap(*(++hull_back), *it);
     }
-    
-    // Handle the last point separately, since it connects to the first
-    point_vector::iterator last = points.end() - 1;
-    if (clockwise_or_collinear(*(last - 1), *last, points.front()))
-        on_hull[last - points.begin()] = true;
-    
-    // Count the number of points on the hull
-    int n_hull = std::accumulate(on_hull.begin(), on_hull.end(), 0);
     
     // Compact the original point vector to contain only points on the hull
-    point_vector::iterator hp = points.begin();
-    for (int i = 0; i < points.size(); ++i)
-    {
-        if (on_hull[i])
-            *hp++ = points[i];
-    }
+    size_t n_hull = hull_back - points.begin() + 1;
     points.resize(n_hull);
 }
 
@@ -127,6 +120,10 @@ int main(int argc, const char * argv[])
         
         // Increment region number (first region is 1)
         ++region_number;
+        
+        // Print separator line
+        if (region_number != 1)
+            std::cout << std::endl;
         
         // Allocate storage for points
         point_vector points(n_vertices);
@@ -151,10 +148,6 @@ int main(int argc, const char * argv[])
             perimeter += distance(*it, *(it + 1));
         }
         perimeter += distance(points.back(), points.front());
-        
-        // Print separator line
-        if (region_number != 1)
-            std::cout << std::endl;
         
         // Print region header
         std::cout << "Region #" << region_number << ":" << std::endl;
