@@ -76,27 +76,22 @@ void reduce_to_convex_hull(point_vector& points)
     std::swap(*lowest_pos, points.front());
     point lowest_point = points.front();
     
-    //std::cout << "Lowest point is " << lowest_point << std::endl;
-    
-    // Sort points (except first) by angle from lowest point (in reverse order)
+    // Sort points (except first) by angle from lowest point
     std::sort(points.begin() + 1, points.end(), clockwise_comparator(lowest_point));
     
-    // Perform scan to determine whether points are on the hull
+    // Initialize stack with lowest point, largest angle point
     point_vector::iterator hull_back = points.begin() + 1;
-    //std::cout << *hull_back << " is on the stack" << std::endl;
+    
+    // Perform scan to determine whether points are on the hull
     for (point_vector::iterator it = points.begin() + 2; it < points.end(); ++it)
     {
         while (!clockwise_or_collinear(*(hull_back - 1), *hull_back, *it))
         {
             if (hull_back > points.begin())
-            {
-                //std::cout << "Backtracking" << std::endl;
                 --hull_back; // Pop stack
-            }
         }
         
         // Add point to hull stack
-        //std::cout << "Adding " << *it << " to the stack" << std::endl;
         std::swap(*(++hull_back), *it);
     }
     
