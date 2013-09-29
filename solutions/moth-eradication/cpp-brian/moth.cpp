@@ -32,8 +32,8 @@ std::ostream& operator<< (std::ostream& out, const point& p)
 
 double distance(const point& p0, const point& p1)
 {
-    double dx = p1.x - p0.x;
-    double dy = p1.y - p0.y;
+    const double dx = p1.x - p0.x;
+    const double dy = p1.y - p0.y;
     return std::sqrt(dx*dx + dy*dy);
 }
 
@@ -44,8 +44,8 @@ double cross_direction(const point& a, const point& b, const point& c)
 
 point centroid(const point& a, const point& b, const point& c)
 {
-    double x = (a.x + b.x + c.x) / 3;
-    double y = (a.y + b.y + c.y) / 3;
+    const double x = (a.x + b.x + c.x) / 3;
+    const double y = (a.y + b.y + c.y) / 3;
     return point(x, y);
 }
 
@@ -53,8 +53,8 @@ point centroid(const point& a, const point& b, const point& c)
 // Choice of quadrant numbering is arbitrary - here upper left quadrant is zero.
 int quadrant(const point& a, const point& b)
 {
-    double dx = b.x - a.x;
-    double dy = b.y - a.y;
+    const double dx = b.x - a.x;
+    const double dy = b.y - a.y;
     if (dx < 0) // Left
     {
         if (dy < 0) // Bottom left
@@ -88,7 +88,7 @@ struct clockwise_comparator : public std::binary_function<point, point, bool>
             return cross_direction(a, b, c) < 0.0;
     }
     
-    point a;
+    const point a;
 };
 
 bool compare_y(const point& a, const point& b)
@@ -111,9 +111,9 @@ size_t find_convex_hull(point_vector& points)
         return n;
     
     // Swap the lowest point into the first position
-    point_vector::iterator lowest_pos = std::min_element(points.begin(), points.end(), compare_y);
+    const point_vector::iterator lowest_pos = std::min_element(points.begin(), points.end(), compare_y);
     std::swap(*lowest_pos, points.front());
-    point lowest_point = points.front();
+    const point lowest_point = points.front();
     
     // Sort points (except first) by angle from lowest point
     std::sort(points.begin() + 1, points.end(), clockwise_comparator(lowest_point));
@@ -205,7 +205,7 @@ int main(int argc, const char * argv[])
         if (n_hull < points.size())
         {
             // 1. Create a point p_center the hull by taking the centroid of any three hull points
-            point p_center = centroid(points[0], points[n_hull / 2], points[n_hull - 1]);
+            const point p_center = centroid(points[0], points[n_hull / 2], points[n_hull - 1]);
             
             // 2. Sort hull points and interior points, clockwise around p_center
             std::sort(points.begin(), hull_end, clockwise_comparator(p_center));
@@ -257,7 +257,7 @@ int main(int argc, const char * argv[])
             }
             
             // Number of points on perimeter includes all hull points and non-hull perimeter points
-            size_t n_perim = perimeter_back - points.begin();
+            const size_t n_perim = perimeter_back - points.begin();
             
             // 4. Sort all the perimeter points clockwise around p_center
             std::sort(points.begin(), perimeter_back, clockwise_comparator(p_center));
@@ -270,7 +270,7 @@ int main(int argc, const char * argv[])
         std::cout << "Region #" << region_number << ":" << std::endl;
         
         // Print region perimeter
-        for (point_vector::iterator it = points.begin(); it < points.end(); ++it)
+        for (point_vector::const_iterator it = points.begin(); it < points.end(); ++it)
         {
             std::cout << *it << "-";
         }
