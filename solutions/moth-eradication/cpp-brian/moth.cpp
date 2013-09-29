@@ -37,17 +37,40 @@ double distance(const point& p0, const point& p1)
 
 double cross_product(const point& a, const point& b, const point& c)
 {
-//    std::cout << "Cross product of " << a << " " << b << " " << c << " is "
-//        << (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x) << std::endl;
-    return (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+    return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+}
+
+point centroid(const point& a, const point& b, const point& c)
+{
+    double x = (a.x + b.x + c.x) / 3;
+    double y = (a.y + b.y + c.y) / 3;
+    return point(x, y);
+}
+
+// Returns which quadrant b lies in relative to a.
+// Choice of quadrant numbering is arbitrary, here upper left
+// quadrant is zero.
+int quadrant(const point& a, const point& b)
+{
+    double dx = b.x - a.x;
+    double dy = b.y - a.y;
+    if (dx < 0) // Left
+    {
+        if (dy < 0) // Bottom left
+            return 3;
+        else // Top left
+            return 0;
+    }
+    else
+    {
+        if (dy < 0) // Bottom right
+            return 2;
+        else // Top right
+            return 1;
+    }
 }
 
 typedef std::vector<point> point_vector;
-
-bool clockwise_or_collinear(const point& a, const point& b, const point& c)
-{
-    return cross_product(a, b, c) <= 0.0;
-}
 
 struct clockwise_comparator : public std::binary_function<point, point, bool>
 {
@@ -56,9 +79,28 @@ struct clockwise_comparator : public std::binary_function<point, point, bool>
     // Returns true if c is clockwise from b with reference to a
     bool operator()(const point& b, const point& c)
     {
-        return cross_product(a, b, c) < 0.0;
+        int q_b = quadrant(a, b);
+        int q_c = quadrant(a, c);
+        
+        if (q_b != q_c)
+        {
+            return q_b < q_c;
+        }
+        else
+        {
+            // If we're in the same quadrant, check the cross product
+            return cross_product(a, b, c) < 0.0;
+        }
+        
+//        double theta_b, theta_c;
+//        theta_b = atan2(b.y - a.y, b.x - a.x);
+//        if (theta_b < 0.0) theta_b += M_2_PI;
+//        
+//        theta_c = atan2(c.y - a.y, c.x - a.x);
+//        if (theta_c < 0.0) theta_c += M_2_PI;
+//        
+//        return theta_c < theta_b;
     }
-    
     point a;
 };
 
@@ -179,9 +221,20 @@ int main(int argc, const char * argv[])
         }
         
         // Run Graham Scan algorithm
-        size_t n_hull = find_convex_hull(points);
+        const size_t n_hull = find_convex_hull(points);
         
-        // TODO: deal with interior points which may be on the perimeter.
+        const point_vector::iterator hull_end = points.begin() + n_hull;
+        
+        
+        // Compute perimeter length from the convex hull
+        double perimeter_length = 0.0;
+        for (point_vector::const_iterator it = points.begin(); it < hull_end - 1; ++it)
+        {
+            perimeter_length += distance(*it, *(it + 1));
+        }
+        // Connect the last point to to the first
+        perimeter_length += distance(points[n_hull - 1], points[0]);
+        
         // 1. Create a point p_center the hull by taking the centroid of any three hull points
         // 2. Sort hull points and interior points, clockwise around p_center
         // 3. Read the first two hull points. Scan through interior points until they are outside the
@@ -189,19 +242,68 @@ int main(int argc, const char * argv[])
         //    interior points list. Repeat until finished.
         // 4. Sort the subrange [0, n_hull + n_perim] clockwise around p_center.
         // 5. Resize vector to n_hull + n_perim
-        
-        
-        
-        points.resize(n_hull);
-        
-        
-        // Compute perimeter
-        double perimeter = 0.0;
-        for (point_vector::iterator it = points.begin(); it < points.end() - 1; ++it)
+        if (n_hull < points.size())
         {
-            perimeter += distance(*it, *(it + 1));
+            point p_center = centroid(points[0], points[n_hull / 2], points[n_hull - 1]);
+//            std::cout << p_center << std::endl;
+            std::sort(points.begin(), hull_end, clockwise_comparator(p_center));
+            std::sort(hull_end, points.end(), clockwise_comparator(p_center));
+            
+//            std::cout << "Interior points: ";
+//            for (point_vector::const_iterator it = points.begin() + n_hull; it < points.end(); ++it)
+//            {
+//                std::cout << *it << ", ";
+//            }
+//            std::cout << std::endl;
+            
+            const point_vector::iterator interior_begin = hull_end;
+            point_vector::iterator perimeter_back = hull_end;
+            
+            // Start with last point on hull, which will be the last one in Q3
+            point h0 = points[n_hull - 1];
+            point h1;
+            point_vector::iterator ip = interior_begin;
+            for (point_vector::const_iterator hp = points.begin(); hp <= hull_end; ++hp)
+            {
+                // Wrap around
+                if (hp == hull_end)
+                    h1 = points.front();
+                else
+                    h1 = *hp;
+                
+                // Work on line h0->h1
+                while (ip < points.end())
+                {
+                    point p = *ip;
+                    // p should be right of p_center->h0 and left of p_center->h1
+                    if (cross_product(p_center, h0, p) <= 0.0 && cross_product(p_center, h1, p) >= 0.0)
+                    {
+//                        std::cout << p << " is between " << h0 << " and " << h1 << std::endl;
+                        // Now check to see whether this is on the line h0->h1 or not
+                        if (cross_product(h0, h1, p) == 0.0)
+                        {
+//                            std::cout << p << " is a perimeter point" << std::endl;
+                            std::swap(*ip, *perimeter_back++);
+                        }
+                        ++ip;
+                    }
+                    else
+                    {
+                        // No more interior points in this slice; move to next one
+                        break;
+                    }
+                }
+                
+                // Shift h1 before advancing to next slice
+                h0 = h1;
+            }
+            
+            size_t n_perim = perimeter_back - points.begin();
+            
+            std::sort(points.begin(), perimeter_back, clockwise_comparator(p_center));
+            
+            points.resize(n_perim);
         }
-        perimeter += distance(points.back(), points.front());
         
         // Print region header
         std::cout << "Region #" << region_number << ":" << std::endl;
@@ -213,8 +315,9 @@ int main(int argc, const char * argv[])
         }
         std::cout << points.front() << std::endl;
         
+        
         // Print the perimeter length
-        std::cout << std::setprecision(2) << "Perimeter length = " << perimeter << std::endl;
+        std::cout << std::setprecision(2) << "Perimeter length = " << perimeter_length << std::endl;
     }
     return 0;
 }
