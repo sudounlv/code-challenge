@@ -21,6 +21,8 @@ struct point
     double x, y;
 };
 
+typedef std::vector<point> point_vector;
+
 std::ostream& operator<< (std::ostream& out, const point& p)
 {
     out << std::fixed << std::setprecision(1);
@@ -35,7 +37,7 @@ double distance(const point& p0, const point& p1)
     return std::sqrt(dx*dx + dy*dy);
 }
 
-double cross_product(const point& a, const point& b, const point& c)
+double cross_direction(const point& a, const point& b, const point& c)
 {
     return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
@@ -48,8 +50,7 @@ point centroid(const point& a, const point& b, const point& c)
 }
 
 // Returns which quadrant b lies in relative to a.
-// Choice of quadrant numbering is arbitrary, here upper left
-// quadrant is zero.
+// Choice of quadrant numbering is arbitrary - here upper left quadrant is zero.
 int quadrant(const point& a, const point& b)
 {
     double dx = b.x - a.x;
@@ -70,8 +71,6 @@ int quadrant(const point& a, const point& b)
     }
 }
 
-typedef std::vector<point> point_vector;
-
 struct clockwise_comparator : public std::binary_function<point, point, bool>
 {
     clockwise_comparator(point p) : a(p) { }
@@ -83,29 +82,18 @@ struct clockwise_comparator : public std::binary_function<point, point, bool>
         int q_c = quadrant(a, c);
         
         if (q_b != q_c)
-        {
             return q_b < q_c;
-        }
         else
-        {
             // If we're in the same quadrant, check the cross product
-            return cross_product(a, b, c) < 0.0;
-        }
-        
-//        double theta_b, theta_c;
-//        theta_b = atan2(b.y - a.y, b.x - a.x);
-//        if (theta_b < 0.0) theta_b += M_2_PI;
-//        
-//        theta_c = atan2(c.y - a.y, c.x - a.x);
-//        if (theta_c < 0.0) theta_c += M_2_PI;
-//        
-//        return theta_c < theta_b;
+            return cross_direction(a, b, c) < 0.0;
     }
+    
     point a;
 };
 
 bool compare_y(const point& a, const point& b)
 {
+    // Fall through to x comparison if y coords are equal
     if (a.y == b.y)
         return a.x < b.x;
     else
@@ -129,22 +117,9 @@ size_t find_convex_hull(point_vector& points)
     
     // Sort points (except first) by angle from lowest point
     std::sort(points.begin() + 1, points.end(), clockwise_comparator(lowest_point));
-//    std::cout  << std::endl;
-//    for (point_vector::iterator p = points.begin(); p < points.end(); ++p)
-//    {
-//        std::cout << *p << std::endl;
-//    }
-//    std::cout  << std::endl;
     
     // Initialize stack with lowest point, largest angle point
     point_vector::iterator hull_back = points.begin() + 1;
-    
-//    std::cout << "STACK: ";
-//    for (point_vector::iterator it = hull_back; it >= points.begin(); --it)
-//    {
-//        std::cout << *it;
-//    }
-//    std::cout << std::endl;
     
     // Perform scan to determine whether points are on the hull
     for (point_vector::iterator it = points.begin() + 2; it <= points.end(); ++it)
@@ -159,26 +134,18 @@ size_t find_convex_hull(point_vector& points)
         
         // If this point would produce a concavity with the current hull points, we need to
         // backtrack by discarding hull points until that is not the case. These discarded
-        // points will be interior to the new hull with the current point.
-        while (cross_product(*(hull_back - 1), *hull_back, p) >= 0)
+        // points will be interior to the new hull which includes the current point.
+        while (cross_direction(*(hull_back - 1), *hull_back, p) >= 0)
         {
             
             --hull_back; // Pop stack
-                
-//            std::cout << "Backtracking, " << "STACK: ";
-//            for (point_vector::iterator it = hull_back; it >= points.begin(); --it)
-//            {
-//                std::cout << *it;
-//            }
-//            std::cout << std::endl;
             
-            // Don't pop the first point
+            // The first point always remains on the hull
             if (hull_back == points.begin())
                 break;
         }
         
-        // Add swap point into the hull stack, unless we've wrapped around
-//        std::cout << "Adding " << p << " to the stack" << std::endl;
+        // Swap point into the hull stack, unless we've wrapped around
         if (it != points.end())
             std::swap(*(++hull_back), *it);
     }
@@ -225,7 +192,6 @@ int main(int argc, const char * argv[])
         
         const point_vector::iterator hull_end = points.begin() + n_hull;
         
-        
         // Compute perimeter length from the convex hull
         double perimeter_length = 0.0;
         for (point_vector::const_iterator it = points.begin(); it < hull_end - 1; ++it)
@@ -235,37 +201,30 @@ int main(int argc, const char * argv[])
         // Connect the last point to to the first
         perimeter_length += distance(points[n_hull - 1], points[0]);
         
-        // 1. Create a point p_center the hull by taking the centroid of any three hull points
-        // 2. Sort hull points and interior points, clockwise around p_center
-        // 3. Read the first two hull points. Scan through interior points until they are outside the
-        //    triangle <p_center, h0, h1>. If any fall on the line h0h1, swap them to the front of the
-        //    interior points list. Repeat until finished.
-        // 4. Sort the subrange [0, n_hull + n_perim] clockwise around p_center.
-        // 5. Resize vector to n_hull + n_perim
+        // Now handle points that are not on the convex hull, but are on the perimeter.
         if (n_hull < points.size())
         {
+            // 1. Create a point p_center the hull by taking the centroid of any three hull points
             point p_center = centroid(points[0], points[n_hull / 2], points[n_hull - 1]);
-//            std::cout << p_center << std::endl;
+            
+            // 2. Sort hull points and interior points, clockwise around p_center
             std::sort(points.begin(), hull_end, clockwise_comparator(p_center));
             std::sort(hull_end, points.end(), clockwise_comparator(p_center));
             
-//            std::cout << "Interior points: ";
-//            for (point_vector::const_iterator it = points.begin() + n_hull; it < points.end(); ++it)
-//            {
-//                std::cout << *it << ", ";
-//            }
-//            std::cout << std::endl;
-            
-            const point_vector::iterator interior_begin = hull_end;
-            point_vector::iterator perimeter_back = hull_end;
+            // 3. Read the first two hull points. Scan through interior points until they are outside the
+            //    triangle <p_center, h0, h1>. If any fall on the line h0h1, swap them to the front of the
+            //    interior points list, Repeat until finished.
             
             // Start with last point on hull, which will be the last one in Q3
             point h0 = points[n_hull - 1];
             point h1;
-            point_vector::iterator ip = interior_begin;
+            
+            point_vector::iterator ip = hull_end; // Iterates through interior points
+            point_vector::iterator perimeter_back = hull_end; // Back of perimeter points stack
+            
             for (point_vector::const_iterator hp = points.begin(); hp <= hull_end; ++hp)
             {
-                // Wrap around
+                // Wrap h1 around to first point for last line
                 if (hp == hull_end)
                     h1 = points.front();
                 else
@@ -275,21 +234,20 @@ int main(int argc, const char * argv[])
                 while (ip < points.end())
                 {
                     point p = *ip;
-                    // p should be right of p_center->h0 and left of p_center->h1
-                    if (cross_product(p_center, h0, p) <= 0.0 && cross_product(p_center, h1, p) >= 0.0)
+                    // If p is in this slice, p should be right of p_center->h0 and left of p_center->h1
+                    if (cross_direction(p_center, h0, p) <= 0.0 && cross_direction(p_center, h1, p) >= 0.0)
                     {
-//                        std::cout << p << " is between " << h0 << " and " << h1 << std::endl;
                         // Now check to see whether this is on the line h0->h1 or not
-                        if (cross_product(h0, h1, p) == 0.0)
+                        if (cross_direction(h0, h1, p) == 0.0)
                         {
-//                            std::cout << p << " is a perimeter point" << std::endl;
+                            // Add this point to the perimeter points stack
                             std::swap(*ip, *perimeter_back++);
                         }
                         ++ip;
                     }
                     else
                     {
-                        // No more interior points in this slice; move to next one
+                        // No more interior points in this slice; move to the next one
                         break;
                     }
                 }
@@ -298,10 +256,13 @@ int main(int argc, const char * argv[])
                 h0 = h1;
             }
             
+            // Number of points on perimeter includes all hull points and non-hull perimeter points
             size_t n_perim = perimeter_back - points.begin();
             
+            // 4. Sort all the perimeter points clockwise around p_center
             std::sort(points.begin(), perimeter_back, clockwise_comparator(p_center));
             
+            // 5. Shrink vector to contain only the perimeter
             points.resize(n_perim);
         }
         
@@ -314,7 +275,6 @@ int main(int argc, const char * argv[])
             std::cout << *it << "-";
         }
         std::cout << points.front() << std::endl;
-        
         
         // Print the perimeter length
         std::cout << std::setprecision(2) << "Perimeter length = " << perimeter_length << std::endl;
