@@ -112,8 +112,8 @@ size_t find_convex_hull(point_vector& points)
     
     // Swap the lowest point into the first position
     const point_vector::iterator lowest_pos = std::min_element(points.begin(), points.end(), compare_y);
-    std::swap(*lowest_pos, points.front());
-    const point lowest_point = points.front();
+    std::swap(*lowest_pos, points[0]);
+    const point lowest_point = points[0];
     
     // Sort points (except first) by angle from lowest point
     std::sort(points.begin() + 1, points.end(), clockwise_comparator(lowest_point));
@@ -128,7 +128,7 @@ size_t find_convex_hull(point_vector& points)
         
         // In the last iteration, wrap around to the first point
         if (it == points.end())
-            p = points.front();
+            p = points[0];
         else
             p = *it;
         
@@ -137,7 +137,6 @@ size_t find_convex_hull(point_vector& points)
         // points will be interior to the new hull which includes the current point.
         while (cross_direction(*(hull_back - 1), *hull_back, p) >= 0)
         {
-            
             --hull_back; // Pop stack
             
             // The first point always remains on the hull
@@ -201,10 +200,10 @@ int main(int argc, const char * argv[])
         // Connect the last point to to the first
         perimeter_length += distance(points[n_hull - 1], points[0]);
         
-        // Now handle points that are not on the convex hull, but are on the perimeter.
+        // Now handle points that are not part of the convex hull, but are on the perimeter.
         if (n_hull < points.size())
         {
-            // 1. Create a point p_center the hull by taking the centroid of any three hull points
+            // 1. Create a point p_center inside the hull by taking the centroid of any three hull points
             const point p_center = centroid(points[0], points[n_hull / 2], points[n_hull - 1]);
             
             // 2. Sort hull points and interior points, clockwise around p_center
@@ -226,7 +225,7 @@ int main(int argc, const char * argv[])
             {
                 // Wrap h1 around to first point for last line
                 if (hp == hull_end)
-                    h1 = points.front();
+                    h1 = points[0];
                 else
                     h1 = *hp;
                 
@@ -241,9 +240,13 @@ int main(int argc, const char * argv[])
                         if (cross_direction(h0, h1, p) == 0.0)
                         {
                             // Add this point to the perimeter points stack
-                            std::swap(*ip, *perimeter_back++);
+                            std::swap(*ip++, *perimeter_back++);
                         }
-                        ++ip;
+                        else
+                        {
+                            // This point is not on the perimeter
+                            ++ip;
+                        }
                     }
                     else
                     {
@@ -256,11 +259,15 @@ int main(int argc, const char * argv[])
                 h0 = h1;
             }
             
-            // Number of points on perimeter includes all hull points and non-hull perimeter points
-            const size_t n_perim = perimeter_back - points.begin();
+            // perimeter_back has been advanced in the last iteration and is now one past the last point
+            // on the perimeter stack. Rename this to perimeter_end.
+            const point_vector::iterator perimeter_end = perimeter_back;
             
             // 4. Sort all the perimeter points clockwise around p_center
-            std::sort(points.begin(), perimeter_back, clockwise_comparator(p_center));
+            std::sort(points.begin(), perimeter_end, clockwise_comparator(p_center));
+            
+            // Number of points on perimeter includes all hull points and non-hull perimeter points
+            const size_t n_perim = perimeter_end - points.begin();
             
             // 5. Shrink vector to contain only the perimeter
             points.resize(n_perim);
@@ -274,7 +281,7 @@ int main(int argc, const char * argv[])
         {
             std::cout << *it << "-";
         }
-        std::cout << points.front() << std::endl;
+        std::cout << points[0] << std::endl;
         
         // Print the perimeter length
         std::cout << std::setprecision(2) << "Perimeter length = " << perimeter_length << std::endl;
