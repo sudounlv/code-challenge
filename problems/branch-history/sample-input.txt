@@ -1,0 +1,16 @@
+11
+0  () Initial commit.
+1  (^0) Added some files.
+2  (^1) Fixed a bug.
+3  (^2) Changed the word generator for greater cromulence
+4  (^3) Fixed 23 bugs in new generator
+5  (^2) Bug fix in bean counter
+7  (^4 ^5) Merge bug fixes into wordgen branch
+8  (^5) Optimize bean counter for performance
+9  (^8) Parallelize bean counter
+10 (^5 ^9) Merge parallel bean counter into master
+11 (^10) Update README
+3
+master 11
+wordgen 7
+fastbeans 9
