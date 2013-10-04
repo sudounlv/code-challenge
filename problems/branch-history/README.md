@@ -38,10 +38,10 @@ be the name of the ref for which to print the log.
     3. Modified the word generator; now more cromulent
 
     3 -1
-    Commit #4: Fixed 23 bugs in new generator
+    4. Fixed 23 bugs in new generator
 
     5 -1
-    Commit #5: Bug fix in bean counter
+    5. Bug fix in bean counter
 
     4 5
     6. Merge bug fixes into wordgen branch
