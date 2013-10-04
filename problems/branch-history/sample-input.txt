@@ -1,26 +1,37 @@
-12
+11
 -1 -1
 Initial commit.
+
 0 -1
-#1 Added some files.
+1. Added some files.
+
 1 -1
-#2 Fixed a bug.
+2. Fixed a bug.
+
 2 -1
-#3 Changed the word generator for greater cromulence
+3. Modified the word generator; now more cromulent
+
 3 -1
-#4 Fixed 23 bugs in new generator
-5 -1
-#5 Bug fix in bean counter
+4. Fixed 23 bugs in new generator
+
+2 -1
+5. Bug fix in load balancer
+
 4 5
-#7  Merge bug fixes into wordgen branch
+6. Merge bug fixes into wordgen branch
+
 5 -1
-#8 Optimize bean counter for performance
+7. Optimize bean counter for performance
+
 8 -1
-#9 Parallelize bean counter
+8. Parallelize bean counter
+
 5 9
-#10 Merge parallel bean counter into master
+9. Merge parallel bean counter into master
+
 10 -1
-#11 Update README
+10. Update README
+
 3
 master 11
 wordgen 7
