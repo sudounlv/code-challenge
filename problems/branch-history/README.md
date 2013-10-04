@@ -77,12 +77,12 @@ walk the DAG and print out the commit messages for each ancestor commit in
 
 `./branch_history wordgen < sample-input.txt`
 
-6. Merge bug fixes into wordgen branch
-5. Bug fix in load balancer
-4. Fixed 23 bugs in new generator
-3. Modified the word generator; now more cromulent
-2. Fixed a bug.
-1. Added some files.
+    6. Merge bug fixes into wordgen branch
+    5. Bug fix in load balancer
+    4. Fixed 23 bugs in new generator
+    3. Modified the word generator; now more cromulent
+    2. Fixed a bug.
+    1. Added some files.
 
 
 Hints / Suggestions
