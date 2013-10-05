@@ -2,10 +2,8 @@
 #include <sstream>
 #include <vector>
 #include <map>
-#include <algorithm>
 #include <queue>
 #include <set>
-#include <functional>
 
 struct commit
 {
