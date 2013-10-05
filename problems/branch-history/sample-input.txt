@@ -23,16 +23,16 @@ Initial commit.
 5 -1
 7. Optimize bean counter for performance
 
-8 -1
+7 -1
 8. Parallelize bean counter
 
-5 9
+5 8
 9. Merge parallel bean counter into master
 
-10 -1
+9 -1
 10. Update README
 
 3
-master 11
-wordgen 7
-fastbeans 9
+master 10
+wordgen 6
+fastbeans 8
