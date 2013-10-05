@@ -93,7 +93,7 @@ walk the DAG and print out the commit messages for each ancestor commit in
     3. Modified the word generator; now more cromulent
     2. Fixed a bug.
     1. Added some files.
-
+    Initial commit.
 
 Hints / Suggestions
 -------------------
